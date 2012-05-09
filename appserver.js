@@ -19,7 +19,7 @@ var Server = function (io) {
     this.__methods = [];
     this.__watchFiles = [];
     this.Methods = function (methods) {
-        console.log("Server.Methods");
+        // console.log("Server.Methods");
         for (var k in methods) {
             self.__methods[k] = methods[k];
         };

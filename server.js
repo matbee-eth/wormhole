@@ -5,13 +5,8 @@ var appS = require('./appserver');
 app.listen(8080); 
 app.use(express.static(__dirname + '/'));
 
-var downloads = {};
 app.get('/', function (req, res) {
-  var file = req.params[0];
-  downloads[file] = downloads[file] || 0;
-  downloads[file]++;
-  next();
-  console.log(downloads);
+
 });
 
 appServer = new appS.appserver(io);
