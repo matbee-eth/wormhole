@@ -1,0 +1,34 @@
+I don't know how to make this pretty.
+So.
+
+Look at server.js for an example on how to use it.
+//								io is socket.io.
+appServer = new appS.appserver(io);
+
+// Asynchronous RPC Methods
+appServer.Methods({
+    Hello:function (parameters, callback) {
+        // var f = (function(string){alert(string);});
+        appServer.ExecuteJson(appServer.serverMethodQueue[callback].socket, function (string) {
+            console.log("serverside: " + string);
+        }, "string!");
+        appServer.Trigger(callback, "world.", "balls", "big balls");
+    }
+});
+
+// Tell the client when a file changes.
+appServer.WatchFiles(__dirname + '/index.html', function(client) {
+    // appServer.ExecuteJson(client, function() { window.location.reload(); });
+});
+
+// Automatically updates DOM with updated CSS
+appServer.WatchFiles(__dirname + '/test.css', function(client) {
+    // appServer.ExecuteJson(client, function() { window.location.reload(); });
+
+});
+
+// Automatically updates DOM with updated JS
+appServer.WatchFiles(__dirname + '/test.js', function(client) {
+    // appServer.ExecuteJson(client, function() { window.location.reload(); });
+    
+});

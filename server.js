@@ -21,17 +21,17 @@ appServer.Methods({
         appServer.ExecuteJson(appServer.serverMethodQueue[callback].socket, function (string) {
             console.log("serverside: " + string);
         }, "string!");
-        appServer.trigger(callback, "world.", "balls", "big balls");
+        appServer.Trigger(callback, "world.", "balls", "big balls");
     }
 });
-appServer.watchFiles(__dirname + '/index.html', function(client) {
+appServer.WatchFiles(__dirname + '/index.html', function(client) {
     // appServer.ExecuteJson(client, function() { window.location.reload(); });
 });
-appServer.watchFiles(__dirname + '/test.css', function(client) {
+appServer.WatchFiles(__dirname + '/test.css', function(client) {
     // appServer.ExecuteJson(client, function() { window.location.reload(); });
-    
+
 });
-appServer.watchFiles(__dirname + '/test.js', function(client) {
+appServer.WatchFiles(__dirname + '/test.js', function(client) {
     // appServer.ExecuteJson(client, function() { window.location.reload(); });
     
 });

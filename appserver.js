@@ -38,7 +38,7 @@ var Server = function (io) {
         socket.emit('javascript', {func: func.toString(), arguments: args});
     };
 
-    this.trigger = function (callbackId, data) {
+    this.Trigger = function (callbackId, data) {
         if (self.serverMethodQueue[callbackId]) {
             var args = Array.prototype.slice.call(arguments);
             args = args.slice(1);
@@ -48,7 +48,7 @@ var Server = function (io) {
         };
     };
 
-    this.fail = function (callbackId) {
+    this.Fail = function (callbackId) {
         var args = Array.prototype.slice.call(arguments);
             args = args.slice(1);
         var fail = [true].concat(args);
@@ -58,7 +58,7 @@ var Server = function (io) {
 
     var lastEdit = [];
 
-    this.watchFiles = function (fileName, callback) {
+    this.WatchFiles = function (fileName, callback) {
         if (fileName) {
             fs.watchFile(fileName, function (curr, prev) {
                 if (lastEdit[fileName]) {
