@@ -2,7 +2,7 @@ I don't know how to make this pretty.
 So.
 
 Look at server.js for an example on how to use it.
-//								io is socket.io.
+//io is socket.io.
 appServer = new appS.appserver(io);
 
 // Asynchronous RPC Methods
