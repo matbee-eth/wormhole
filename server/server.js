@@ -26,19 +26,19 @@ app.get('/*', function (req, res) {
 var parseCookie = require('connect').utils.parseCookie;
 
 
-appServer = new appS.appserver(io, sessionStore);
+appServer = new appS.appserver(io);
 
 // You're given an $ object with your appServer.Methods({}); functions.
 // You can only execute the client-specified callback ONCE.
 appServer.Methods({
     Hello:function (parameters, callback) {
         var _params = parameters;
-        // this("world.", "balls", "big balls"); // Executes the client-specified callback function.
-        // // this.$(function, parameters, parameters, parameters....);
+        // this("world.", "balls", "big balls"); // Executes the client-specified callback function. Can only be fired once.
+        // this(function, parameter, parameter, parameter, parameter...);
         // this.get(
         //     // Function executed on the client...
         //     function () {
-        //         return [$('#inputElement').val(), navigator.appName];
+        //         return [$('#inputElement').val(), navigator.appName]; // You need to return an object/array. Array's are returned to the server as function parameters.
         //     },
         //     // Server-side callback.
         //     function (value, value2) {
@@ -50,7 +50,6 @@ appServer.Methods({
 });
 
 appServer.Hook('change', '#inputElement', function (event) {
-    // console.log(this);
     this.get(
         // Function executed on the client...
         function () {
@@ -63,22 +62,31 @@ appServer.Hook('change', '#inputElement', function (event) {
     );
 });
 
-appServer.WatchFiles(__dirname + '/../client/index.html', function(client) {
+appServer.WatchFiles(__dirname + '/../client/index.html', function() {
+    // this.get(
+    //     function() {
 
-});
+    //     },
+    //     function () {
 
-appServer.WatchFiles(__dirname + '/../client/test.css', function(client) {
-
-});
-
-appServer.WatchFiles(__dirname + '/../client/test.js', function(client) {
+    //     }
+    // );
+    // this(function(){}, parameters, parameters, parameters, parameters...);
     
 });
 
-appServer.WatchFiles(__dirname + '/../client/clientserver.js', function(client) {
+appServer.WatchFiles(__dirname + '/../client/test.css', function() {
 
 });
 
-appServer.WatchFiles(__dirname + '/../client/test.template.html', function(client) {
+appServer.WatchFiles(__dirname + '/../client/test.js', function() {
+    
+});
+
+appServer.WatchFiles(__dirname + '/../client/clientserver.js', function() {
+
+});
+
+appServer.WatchFiles(__dirname + '/../client/test.template.html', function() {
 
 });

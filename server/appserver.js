@@ -6,7 +6,7 @@ var uglify = require('uglify-js'),
     jsdom = require('jsdom'),
     jquery = require('jquery');
 
-var Server = function (io, sessionStore) {
+var Server = function (io) {
     var self = this;
     var executeQueue = [];
     var _hooks = [];
@@ -223,7 +223,8 @@ var Server = function (io, sessionStore) {
                                 }, id, type, templateContents);
                             }
                         }
-                        callback(clients[k]);
+                        var hook = new methodClass(clients[k]);
+                        callback.call(hook);
                     }, 100)
                 }
             });
