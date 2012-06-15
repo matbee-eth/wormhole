@@ -66,27 +66,6 @@ var Server = function (io, sessionStore) {
         };
         return this.$;
     };
-    var _hook = function (callbackId) {
-        var socket;
-        if (callbackId.constructor.name == "Socket") {
-            socket = callbackId;
-        }
-        else {
-            socket = self.serverMethodQueue[callbackId].socket;
-        }
-
-        var f = function (clientFunction, callbackFunction, arguments) {
-            var serverCallbackId = __randomString();
-            if (!arguments) {
-                arguments = [];
-            }
-            socket.emit('get', {func: clientFunction.toString(), callbackId: serverCallbackId, arguments: arguments});
-            socket.on(serverCallbackId, function () {
-                callbackFunction.apply(null, [].slice.call(arguments)[0]);
-            });
-        };
-        return f;
-    }
     this.Methods = function (methods) {
         for (var k in methods) {
             self.__methods[k] = methods[k];
