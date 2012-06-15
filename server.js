@@ -15,9 +15,9 @@ app.use(express.session({
     key: 'express.sid'
 }));
 
-io.configure('development', function () {
-    io.set('log level', 2);
-})
+// io.configure('development', function () {
+//     io.set('log level', 2);
+// })
 
 app.get('/*', function (req, res) {
     req.session.visitCount = req.session.visitCount ? req.session.visitCount + 1 : 1;
@@ -50,6 +50,7 @@ appServer.Hook('change', '#inputElement', function (event) {
     this.get(
         // Function executed on the client...
         function () {
+            // alert("wtf");
             return $('#inputElement').val();
         },
         // Server-side callback.
@@ -58,18 +59,6 @@ appServer.Hook('change', '#inputElement', function (event) {
         }
     );
 });
-appServer.WatchFiles(__dirname + '/client/index.html', function() {
-    // this.get(
-    //     function() {
-
-    //     },
-    //     function () {
-
-    //     }
-    // );
-    // this(function(){}, parameters, parameters, parameters, parameters...);
-    
-});
 
 appServer.WatchFiles(__dirname + '/client/test.css', function() {
 
@@ -77,10 +66,6 @@ appServer.WatchFiles(__dirname + '/client/test.css', function() {
 
 appServer.WatchFiles(__dirname + '/client/test.js', function() {
     
-});
-
-appServer.WatchFiles(__dirname + '/client/clientserver.js', function() {
-
 });
 
 appServer.WatchFiles(__dirname + '/client/test.template.html', function() {

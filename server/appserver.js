@@ -13,24 +13,25 @@ var Server = function (io) {
 
     self.__io = io;
     self.__io.sockets.on('connection', function (socket) {
-      socket.on('Server.Methods', function (data) {
-        if (self.serverMethodQueue[data.callbackId]) {
-            socket.emit(data.callbackId, {duplicate: true});
+        for (var k in _hooks) {
+            var serverCallbackId = __randomString();
+            socket.emit('hook', {event: _hooks[k].event, element: _hooks[k].element, callbackId: serverCallbackId});
+            
+            socket.on(serverCallbackId, function() {
+                var hook = new methodClass(socket);
+                _hooks[k].callback.apply(hook, [].slice.call(arguments));
+            });
         }
-        else {
-            self.serverMethodQueue[data.callbackId] = {socket: socket, method: data.method, parameters: data.parameters};
-            self.Execute(data.method, data.parameters, data.callbackId);
-            for (var k in _hooks) {
-                var serverCallbackId = __randomString();
-                socket.emit('hook', {event: _hooks[k].event, element: _hooks[k].element, callbackId: serverCallbackId});
-                
-                socket.on(serverCallbackId, function() {
-                    var hook = new methodClass(socket);
-                    _hooks[k].callback.apply(hook, [].slice.call(arguments));
-                });
+        socket.on('Server.Methods', function (data) {
+            if (self.serverMethodQueue[data.callbackId]) {
+                socket.emit(data.callbackId, {duplicate: true});
             }
-        }
-      });
+            else {
+                self.serverMethodQueue[data.callbackId] = {socket: socket, method: data.method, parameters: data.parameters};
+                self.Execute(data.method, data.parameters, data.callbackId);
+                
+            }
+        });
     });
 
     self.serverMethodQueue = [];
