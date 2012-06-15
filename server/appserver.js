@@ -2,7 +2,9 @@ var fs = require('fs');
 var parseCookie = require('connect').utils.parseCookie;
 var uglify = require('uglify-js'),
     jsp = uglify.parser,
-    pro = uglify.uglify;
+    pro = uglify.uglify,
+    jsdom = require('jsdom'),
+    jquery = require('jquery');
 
 var Server = function (io, sessionStore) {
     var self = this;
@@ -22,12 +24,12 @@ var Server = function (io, sessionStore) {
         //     }
         // });
 
-        if (appServer.serverMethodQueue[data.callbackId]) {
+        if (self.serverMethodQueue[data.callbackId]) {
             socket.emit(data.callbackId, {duplicate: true});
         }
         else {
-            appServer.serverMethodQueue[data.callbackId] = {socket: socket, method: data.method, parameters: data.parameters};
-            appServer.Execute(data.method, data.parameters, data.callbackId);
+            self.serverMethodQueue[data.callbackId] = {socket: socket, method: data.method, parameters: data.parameters};
+            self.Execute(data.method, data.parameters, data.callbackId);
         }
       });
     });
@@ -70,7 +72,7 @@ var Server = function (io, sessionStore) {
     this.Execute = function (method, parameters, callbackId) {
         var executeMethod = new methodClass(callbackId);
         if (self.__methods[method]) {
-            self.__methods[method].call(executeMethod, parameters, callbackId);
+            self.__methods[method].call(executeMethod.$, parameters, callbackId);
         }
     };
 
@@ -84,7 +86,7 @@ var Server = function (io, sessionStore) {
     //}
     //
     // ExecuteJavascript(socket, elmo, param1, param2, param3);
-    this.ExecuteJavascript = function (socket, func, args) {
+    this.ExecuteJavascript = function (socket, func) {
         if (socket.constructor.name !== "Socket") {
             if (self.serverMethodQueue[socket].socket) {
                 socket = self.serverMethodQueue[socket].socket
@@ -95,11 +97,19 @@ var Server = function (io, sessionStore) {
         ast = pro.ast_mangle(ast);
         ast = pro.ast_squeeze(ast);
         var finalCode = pro.gen_code(ast);
+        // console.log("----");
+        // console.log("----");
+        // console.log("----");
+        // console.log("----");
+        // console.log(func.toString());
+        // console.log("----");
+        // console.log("----");
+        // console.log("----");
+        // console.log("----");
+        var args = Array.prototype.slice.call(arguments);
+            args = args.slice(2);
 
-        // var args = Array.prototype.slice.call(arguments);
-        //     args = args.slice(2);
-
-        socket.emit('javascript', {func: finalCode.toString().substring("var func=".length), arguments: args.slice(1)});
+        socket.emit('javascript', {func: finalCode.toString().substring("var func=".length), arguments: args});
     };
 
     // Trigger allows you to execute the callback on the client
@@ -140,8 +150,7 @@ var Server = function (io, sessionStore) {
                         var file = fileName.replace(__dirname, "");
                         file = file.replace("../client/", "");
                         if (fileName.substr(fileName.length-4) == ".css") {
-                            appServer.ExecuteJavascript(client, function(fileName) {
-
+                            self.ExecuteJavascript(client, function(fileName) {
                                 $('link[rel="stylesheet"]').each(function () {
                                     if (this.href.substr(this.href.length - fileName.length) == fileName) {
                                         $(this).remove();
@@ -149,7 +158,7 @@ var Server = function (io, sessionStore) {
                                 });
                             }, file);
 
-                            appServer.ExecuteJavascript(client, function (fileName) {
+                            self.ExecuteJavascript(client, function (fileName) {
                                 var link = $("<link>");
                                 link.attr({
                                         type: 'text/css',
@@ -161,14 +170,9 @@ var Server = function (io, sessionStore) {
                                     // $("body").remove(link);
                                 }, 75);
                             }, file);
-
-                            appServer.ExecuteJavascript(client, function(fileName) {
-
-                                
-                            }, file);
                         }
                         else if (fileName.substr(fileName.length-3) == ".js") {
-                            appServer.ExecuteJavascript(client, function (fileName) {
+                            self.ExecuteJavascript(client, function (fileName) {
                                 $('script').each(function () {
                                     if (this.src.substr(this.src.length - fileName.length) == fileName) {
                                         $(this).remove();
@@ -181,7 +185,28 @@ var Server = function (io, sessionStore) {
                                 });
                             }, file);
                         }
+                        else if (fileName.indexOf(".template.html") > -1) {
+                            var window = jsdom.jsdom("<html><head></head><body>"+fs.readFileSync(fileName)+"</body>").createWindow();
 
+                            jsdom.jQueryify(window, function() {
+                                var script = window.$("script");
+                                var id = script.attr('id');
+                                var type = script.attr('type');
+                                var text = script.text();
+                                deleteTemplate(id, type, text);
+                            });
+                            
+                            var deleteTemplate = function (id, type, templateContents) {
+                                self.ExecuteJavascript(client, function (id, type, templateContents) {
+                                    $("#"+id).remove();
+                                    var script = document.createElement("script");
+                                        script.id = id;
+                                        script.type = type;
+                                        script.text = templateContents;
+                                    document.body.appendChild(script);
+                                }, id, type, templateContents);
+                            }
+                        }
                         callback(clients[k]);
                     }, 100)
                 }
@@ -193,9 +218,6 @@ var Server = function (io, sessionStore) {
             return self.__watchFiles;
         }
     };
-    this.__noSuchMethod__ = function () {
-        console.log("NO SUCH METHOD");
-    }
     this.$ = this.ExecuteJavascript;
     return this;
 };

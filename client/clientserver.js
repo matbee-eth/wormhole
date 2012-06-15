@@ -60,11 +60,12 @@ var Server = function (socket) {
 	}
 
 	window.socket.on('javascript', function (data) {
+		if (!$.isArray(data.arguments))
+		data.arguments = [data.arguments];
 		executeJavascript(data);
 	});
 
 	var executeJavascript = function (data) {
-		console.log(data);
 		var f = eval("("+data.func+")");
 		return f.apply(null, data.arguments);
 	}

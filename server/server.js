@@ -50,13 +50,13 @@ appServer = new appS.appserver(io, sessionStore);
 appServer.Methods({
     Hello:function (parameters, callback) {
         var _params = parameters;
-        this.$("world.", "balls", "big balls"); // Executes the client-specified callback function.
-        // this.$(function(string) { alert(string);}, "string!"); // Executes arbitrary javascript on the client.
+        this("world.", "balls", "big balls"); // Executes the client-specified callback function.
+        // this(function(string) { alert(string);}, "string!"); // Executes arbitrary javascript on the client.
         // this.$(function, parameters, parameters, parameters....);
-        this.$.get(
+        this.get(
             // Function executed on the client...
             function () {
-                return $('#inputElement').val();
+                return [$('#inputElement').val(), navigator.appName];
             },
             // Server-side callback.
             function (value, value2) {
@@ -80,5 +80,9 @@ appServer.WatchFiles(__dirname + '/../client/test.js', function(client) {
 });
 
 appServer.WatchFiles(__dirname + '/../client/clientserver.js', function(client) {
+
+});
+
+appServer.WatchFiles(__dirname + '/../client/test.template.html', function(client) {
 
 });
