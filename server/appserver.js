@@ -29,7 +29,6 @@ var Server = function (io) {
             else {
                 self.serverMethodQueue[data.callbackId] = {socket: socket, method: data.method, parameters: data.parameters};
                 self.Execute(data.method, data.parameters, data.callbackId);
-                
             }
         });
     });
@@ -65,6 +64,14 @@ var Server = function (io) {
                 callbackFunction.apply(null, [].slice.call(arguments)[0]);
             });
         };
+        this.$.hook = function (event, element, callback) {
+            var serverCallbackId = __randomString();
+            socket.emit('hook', {event: event, element: element, callbackId: serverCallbackId});
+            socket.on(serverCallbackId, function() {
+                var hook = new methodClass(socket);
+                callback.apply(hook, [].slice.call(arguments));
+            });
+        }
         return this.$;
     };
     this.Methods = function (methods) {
@@ -130,19 +137,28 @@ var Server = function (io) {
         delete self.serverMethodQueue[callbackId];
     };
 
-
-
-    this.Hook = function (event, element, callback) {
-        _hooks.push({event: event, element: element, callback: callback});
-        var clients = self.__io.sockets.clients();
-        for (var k in clients) {
-            var serverCallbackId = __randomString();
-            var socket = clients[k];
-            socket.emit('hook', {event: event, element: element, callbackId: serverCallbackId});
-            socket.on(serverCallbackId, function() {
-                var hook = new methodClass(socket);
-                callback.apply(hook, [].slice.call(arguments));
-            });
+    this.Hook = function (event, element, callback, __socket) {
+        if (!__socket) { // Only push to the public hooks array if every connected client gets attached.
+            _hooks.push({event: event, element: element, callback: callback});
+            var clients = self.__io.sockets.clients();
+            for (var k in clients) {
+                var serverCallbackId = __randomString();
+                var socket = clients[k];
+                socket.emit('hook', {event: event, element: element, callbackId: serverCallbackId});
+                socket.on(serverCallbackId, function() {
+                    var hook = new methodClass(socket);
+                    callback.apply(hook, [].slice.call(arguments));
+                });
+            }
+        }
+        else {
+                var serverCallbackId = __randomString();
+                var socket = __socket;
+                socket.emit('hook', {event: event, element: element, callbackId: serverCallbackId});
+                socket.on(serverCallbackId, function() {
+                    var hook = new methodClass(socket);
+                    callback.apply(hook, [].slice.call(arguments));
+                });
         }
     };
 

@@ -58,6 +58,9 @@ appServer.Hook('change', '#inputElement', function (event) {
             console.log("Clients input field value is: " + value);
         }
     );
+    this.hook('mouseover', '#inputElement', function(event) {
+        console.log('OVAH!');
+    });
 });
 
 appServer.WatchFiles(__dirname + '/client/test.css', function() {
