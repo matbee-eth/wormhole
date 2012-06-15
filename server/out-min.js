@@ -1,0 +1,1 @@
+var func=function(string){console.log("String Equals: "+string)}
