@@ -21,13 +21,21 @@ var Server = function (socket) {
 				}
 				window.socket.emit(data.callbackId, result);
 			});
+			window.socket.on('hook', function (args) {
+				var event = args.event;
+				var callbackId = args.callbackId;
+				var selector = args.selector;
+				$('body').on(event, selector, function (ev) {
+					window.socket.emit(callbackId, event);
+				})
+			});
 			window.socket.emit('Server.Methods', {callbackId:callbackId, method: method, parameters: parameters});
 		}
 		else {
 			executeQueue.push({callback:callback, method: method, parameters: parameters});
 		}
 	};
-
+	
 	__randomString = function() {
 		var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
 		var string_length = 64;

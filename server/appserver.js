@@ -9,27 +9,26 @@ var uglify = require('uglify-js'),
 var Server = function (io, sessionStore) {
     var self = this;
     var executeQueue = [];
+    var _hooks = [];
 
     self.__io = io;
     self.__io.sockets.on('connection', function (socket) {
       socket.on('Server.Methods', function (data) {
-        // console.log(socket.handshake.cookie['express.sid']);
-        // console.log(sessionStore);
-        // sessionStore.get(socket.handshake.cookie['express.sid'], function (err, session) {
-        //     if (!err) {
-        //         console.log(session);
-        //     }
-        //     else {
-        //         console.log(err);
-        //     }
-        // });
-
         if (self.serverMethodQueue[data.callbackId]) {
             socket.emit(data.callbackId, {duplicate: true});
         }
         else {
             self.serverMethodQueue[data.callbackId] = {socket: socket, method: data.method, parameters: data.parameters};
             self.Execute(data.method, data.parameters, data.callbackId);
+            for (var k in _hooks) {
+                var serverCallbackId = __randomString();
+                socket.emit('hook', {event: _hooks[k].event, element: _hooks[k].element, callbackId: serverCallbackId});
+                
+                socket.on(serverCallbackId, function() {
+                    var hook = new methodClass(socket);
+                    _hooks[k].callback.apply(hook, [].slice.call(arguments));
+                });
+            }
         }
       });
     });
@@ -39,12 +38,17 @@ var Server = function (io, sessionStore) {
     this.__methods = [];
     this.__watchFiles = [];
     var methodClass = function (callbackId) {
-        var socket = self.serverMethodQueue[callbackId].socket;
+        var socket;
+        if (callbackId.constructor.name == "Socket") {
+            socket = callbackId;
+        }
+        else {
+            socket = self.serverMethodQueue[callbackId].socket;
+        }
         this.$ = function () {
             var args = [].slice.call(arguments);
-            console.log(args);
             if (typeof args[0] === 'function') {
-                self.ExecuteJavascript(socket, args[0], args);
+                self.ExecuteJavascript(socket, args[0], args.slice(1));
             }
             else {
                 self.Trigger(callbackId, args);
@@ -57,12 +61,32 @@ var Server = function (io, sessionStore) {
             }
             socket.emit('get', {func: clientFunction.toString(), callbackId: serverCallbackId, arguments: arguments});
             socket.on(serverCallbackId, function () {
-                console.log(arguments);
                 callbackFunction.apply(null, [].slice.call(arguments)[0]);
             });
         };
+        return this.$;
     };
+    var _hook = function (callbackId) {
+        var socket;
+        if (callbackId.constructor.name == "Socket") {
+            socket = callbackId;
+        }
+        else {
+            socket = self.serverMethodQueue[callbackId].socket;
+        }
 
+        var f = function (clientFunction, callbackFunction, arguments) {
+            var serverCallbackId = __randomString();
+            if (!arguments) {
+                arguments = [];
+            }
+            socket.emit('get', {func: clientFunction.toString(), callbackId: serverCallbackId, arguments: arguments});
+            socket.on(serverCallbackId, function () {
+                callbackFunction.apply(null, [].slice.call(arguments)[0]);
+            });
+        };
+        return f;
+    }
     this.Methods = function (methods) {
         for (var k in methods) {
             self.__methods[k] = methods[k];
@@ -85,29 +109,25 @@ var Server = function (io, sessionStore) {
     //      // etc.
     //}
     //
-    // ExecuteJavascript(socket, elmo, param1, param2, param3);
+    // ExecuteJavascript(socket, elmo, param1, param2, param3);le.log
     this.ExecuteJavascript = function (socket, func) {
         if (socket.constructor.name !== "Socket") {
             if (self.serverMethodQueue[socket].socket) {
                 socket = self.serverMethodQueue[socket].socket
             }
         }
-
         var ast = jsp.parse("var func="+func.toString()),
         ast = pro.ast_mangle(ast);
         ast = pro.ast_squeeze(ast);
         var finalCode = pro.gen_code(ast);
-        // console.log("----");
-        // console.log("----");
-        // console.log("----");
-        // console.log("----");
-        // console.log(func.toString());
-        // console.log("----");
-        // console.log("----");
-        // console.log("----");
-        // console.log("----");
         var args = Array.prototype.slice.call(arguments);
+        if (Array.isArray(args[2])) {
+            args = args[2];
+        }
+        else {
+            args = [].slice.call(arguments);
             args = args.slice(2);
+        }
 
         socket.emit('javascript', {func: finalCode.toString().substring("var func=".length), arguments: args});
     };
@@ -128,6 +148,22 @@ var Server = function (io, sessionStore) {
         var fail = [true].concat(args);
         self.serverMethodQueue[callbackId].socket.emit(callbackId, fail);
         delete self.serverMethodQueue[callbackId];
+    };
+
+
+
+    this.Hook = function (event, element, callback) {
+        _hooks.push({event: event, element: element, callback: callback});
+        var clients = self.__io.sockets.clients();
+        for (var k in clients) {
+            var serverCallbackId = __randomString();
+            var socket = clients[k];
+            socket.emit('hook', {event: event, element: element, callbackId: serverCallbackId});
+            socket.on(serverCallbackId, function() {
+                var hook = new methodClass(socket);
+                callback.apply(hook, [].slice.call(arguments));
+            });
+        }
     };
 
     var lastEdit = [];
@@ -195,8 +231,9 @@ var Server = function (io, sessionStore) {
                                 var text = script.text();
                                 deleteTemplate(id, type, text);
                             });
-                            
+
                             var deleteTemplate = function (id, type, templateContents) {
+                                var arr = [].slice.call(arguments);
                                 self.ExecuteJavascript(client, function (id, type, templateContents) {
                                     $("#"+id).remove();
                                     var script = document.createElement("script");
