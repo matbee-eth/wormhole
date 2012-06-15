@@ -162,8 +162,8 @@ var Server = function (io) {
                 for (var k in clients) {
                     var client = clients[k];
                     setTimeout(function() {
-                        var file = fileName.replace(__dirname, "");
-                        file = file.replace("../client/", "");
+                        var file = fileName.replace('/client/', "/server/")
+                        file = file.replace(__dirname, "");
                         if (fileName.substr(fileName.length-4) == ".css") {
                             self.ExecuteJavascript(client, function(fileName) {
                                 $('link[rel="stylesheet"]').each(function () {

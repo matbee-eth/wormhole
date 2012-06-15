@@ -1,11 +1,11 @@
 var express = require('express'), app = express.createServer(), 
     io = require('socket.io').listen(app);
-var appS = require('./appserver');
+var appS = require('./server/appserver');
 var MemoryStore = express.session.MemoryStore,
     sessionStore = new MemoryStore({ reapInterval: 60000 * 10 });
 
 app.listen(8080); 
-app.use(express.static(__dirname + '/../client/'));
+app.use(express.static(__dirname + '/client/'));
 app.use(express.bodyParser());
 app.use(express.methodOverride());
 app.use(express.cookieParser());
@@ -22,9 +22,6 @@ io.configure('development', function () {
 app.get('/*', function (req, res) {
     req.session.visitCount = req.session.visitCount ? req.session.visitCount + 1 : 1;
 });
-
-var parseCookie = require('connect').utils.parseCookie;
-
 
 appServer = new appS.appserver(io);
 
@@ -61,8 +58,7 @@ appServer.Hook('change', '#inputElement', function (event) {
         }
     );
 });
-
-appServer.WatchFiles(__dirname + '/../client/index.html', function() {
+appServer.WatchFiles(__dirname + '/client/index.html', function() {
     // this.get(
     //     function() {
 
@@ -75,18 +71,18 @@ appServer.WatchFiles(__dirname + '/../client/index.html', function() {
     
 });
 
-appServer.WatchFiles(__dirname + '/../client/test.css', function() {
+appServer.WatchFiles(__dirname + '/client/test.css', function() {
 
 });
 
-appServer.WatchFiles(__dirname + '/../client/test.js', function() {
+appServer.WatchFiles(__dirname + '/client/test.js', function() {
     
 });
 
-appServer.WatchFiles(__dirname + '/../client/clientserver.js', function() {
+appServer.WatchFiles(__dirname + '/client/clientserver.js', function() {
 
 });
 
-appServer.WatchFiles(__dirname + '/../client/test.template.html', function() {
+appServer.WatchFiles(__dirname + '/client/test.template.html', function() {
 
 });
