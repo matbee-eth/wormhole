@@ -2,12 +2,15 @@
 <head>
 </head>
 <body>
-	<input type="text" id="inputElement" value="watch me, I don't change!"></input>
 	<script src="/socket.io/socket.io.js"></script>
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	<script src="underscore.js"></script>
+	<script src="json2.js"></script>
+	<script src="backbone-min.js"></script>
 	<script src="clientserver.js"></script>
+
 	<script type="text/javascript">
-		if (!window.server) window.server = new Server();
+		if (!window.server) window.server = new MatBee.WormholeServer();
 	</script>
 	<link rel="stylesheet" type="text/css" href="/test.css" />
 	<script src="/test.js"></script>
@@ -16,5 +19,8 @@
 			<span>This is a test.</span>
 		</div>
 	</script>
+
+
+	<input type="text" id="inputElement" value="watch me, I don't change!"></input>
 </body>
 </html>

@@ -1,52 +1,64 @@
-var express = require('express'), app = express.createServer(), 
-    io = require('socket.io').listen(app);
+var express = require('express');
 var appS = require('./server/appserver');
+var dbS = require('./server/dbserver');
 var MemoryStore = express.session.MemoryStore,
     sessionStore = new MemoryStore({ reapInterval: 60000 * 10 });
+var app = express.createServer();
+var io = require('socket.io').listen(app);
+var parseCookie = require('cookie').parse;
+var Session = require('connect').middleware.session.Session;
 
-app.listen(8080); 
-app.use(express.static(__dirname + '/client/'));
-app.use(express.bodyParser());
-app.use(express.methodOverride());
-app.use(express.cookieParser());
-app.use(express.session({
-    store: sessionStore,
-    secret: 'acidhax', 
-    key: 'express.sid'
-}));
+app.configure(function(){
+    app.use(express.bodyParser());
+    app.use(express.methodOverride());
+    app.use(express.cookieParser());
+    app.use(express.session({
+        secret: 'acidhax',
+        cookie: { maxAge: 60000 },
+        store: sessionStore
+    }));
+
+    app.use(app.router);
+    app.use(express.static(__dirname + '/client/'));
+});
+
+io.set('authorization', function (data, accept) {
+    if (data.headers.cookie) {
+        data.cookie = parseCookie(data.headers.cookie);
+        data.sessionID = data.cookie['connect.sid'];
+        // save the session store to the data object 
+        // (as required by the Session constructor)
+        data.sessionStore = sessionStore;
+        data.sessionStore.load(data.sessionID, function(err, sess){
+            if (err || !sess) return accept(err);
+            data.session = sess;
+            accept(null, true);
+        });
+    } else {
+       return accept('No cookie transmitted.', false);
+    }
+});
 
 // io.configure('development', function () {
 //     io.set('log level', 2);
 // })
 
-app.get('/*', function (req, res) {
-    req.session.visitCount = req.session.visitCount ? req.session.visitCount + 1 : 1;
-});
+var dbserv = new dbS.dbserver('http://localhost:5984', true);
+appServer = new appS.appserver(io, dbserv, sessionStore);
 
-appServer = new appS.appserver(io);
-
-// You're given an $ object with your appServer.Methods({}); functions.
-// You can only execute the client-specified callback ONCE.
+// You can only execute the client-specified RPC callback ONCE. It becomes invalid afterwards.
+// To execute, you must execute a Function and supply your optional parameters.
+// this(function (param1, param2) { }, param1, param2);
 appServer.Methods({
     Hello:function (parameters, callback) {
         var _params = parameters;
-        // this("world.", "balls", "big balls"); // Executes the client-specified callback function. Can only be fired once.
-        // this(function, parameter, parameter, parameter, parameter...);
-        // this.get(
-        //     // Function executed on the client...
-        //     function () {
-        //         return [$('#inputElement').val(), navigator.appName]; // You need to return an object/array. Array's are returned to the server as function parameters.
-        //     },
-        //     // Server-side callback.
-        //     function (value, value2) {
-        //         console.log("Clients input field value is: " + value);
-        //         console.log("Clients input field value is: " + value2);
-        //     }
-        // );
+        this.return("world.", "balls", "big balls"); // Executes the client-specified callback function. Can only be fired once.
+        // This is the only time you can simply send parameters.
     }
 });
 
-appServer.Hook('change', '#inputElement', function (event) {
+// Global hook for every connected client.
+appServer.on('change', '#inputElement', function (event) {
     this.get(
         // Function executed on the client...
         function () {
@@ -56,11 +68,11 @@ appServer.Hook('change', '#inputElement', function (event) {
         // Server-side callback.
         function (value) {
             console.log("Clients input field value is: " + value);
+            dbserv.tables("testings").list(function(response) {
+                console.log(response);
+            }, true);
         }
     );
-    this.hook('mouseover', '#inputElement', function(event) {
-        console.log('OVAH!');
-    });
 });
 
 appServer.WatchFiles(__dirname + '/client/test.css', function() {
@@ -74,3 +86,6 @@ appServer.WatchFiles(__dirname + '/client/test.js', function() {
 appServer.WatchFiles(__dirname + '/client/test.template.html', function() {
 
 });
+
+
+app.listen(8080)

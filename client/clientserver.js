@@ -1,7 +1,11 @@
-var Server = function (socket) {
+var MatBee = {
+
+};
+MatBee.WormholeServer = function (socket) {
 	var self = this;
 	var connected = false;
 	var executeQueue = [];
+	var _tables = [];
 	this.executeQueue = executeQueue;
 	this.Execute = function (method, parameters, callback) {
 		if (connected) {
@@ -14,22 +18,7 @@ var Server = function (socket) {
 					callback.apply(null, parameters);
 				}
 			});
-			window.socket.on('get', function (data) {
-				var result = executeJavascript(data);
-				if (!$.isArray(result)) {
-					result = [result];
-				}
-				window.socket.emit(data.callbackId, result);
-			});
-			window.socket.on('hook', function (args) {
-				var event = args.event;
-				var callbackId = args.callbackId;
-				var selector = args.selector;
-				$('body').on(event, selector, function (ev) {
-					window.socket.emit(callbackId, event);
-				})
-			});
-			window.socket.emit('Server.Methods', {callbackId:callbackId, method: method, parameters: parameters});
+			window.socket.emit('WormholeServer.Methods', {callbackId:callbackId, method: method, parameters: parameters});
 		}
 		else {
 			executeQueue.push({callback:callback, method: method, parameters: parameters});
@@ -73,6 +62,23 @@ var Server = function (socket) {
 		executeJavascript(data);
 	});
 
+	window.socket.on('get', function (data) {
+		var result = executeJavascript(data);
+		if (!$.isArray(result)) {
+			result = [result];
+		}
+		window.socket.emit(data.callbackId, result);
+	});
+
+	window.socket.on('hook', function (args) {
+		var event = args.event;
+		var callbackId = args.callbackId;
+		var selector = args.selector;
+		$('body').on(event, selector, function (ev) {
+			window.socket.emit(callbackId, event);
+		})
+	});
+
 	var executeJavascript = function (data) {
 		var f = eval("("+data.func+")");
 		return f.apply(null, data.arguments);
@@ -80,3 +86,20 @@ var Server = function (socket) {
 
 	return this;
 };
+
+var Table = Backbone.Model.extend({
+	defaults: {
+		name: 'noname'
+	},
+	initialize: function () {
+		//Initializing code.
+	}
+});
+
+var TableList = Backbone.Collection.extend({
+
+});
+
+var TableEntry = Backbone.Model.extend({
+
+});
